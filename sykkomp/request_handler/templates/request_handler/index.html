@@ -6,9 +6,9 @@
 </head>
 <body>
     <h1>Dette er en test</h1>
-    <p>{{ all_data }}</p>
+    <p>{{ time }}</p>
     <br/>
-    {% if data != null %}
+    {% if data.time != null %}
         {% for item in data %}
             <h2>Data: {{ item }} </h2>
         {% endfor %}
