@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Dette er en test</h1>
+    <p>{{ all_data }}</p>
+    <br/>
+    {% if data != null %}
+        {% for item in data %}
+            <h2>Data: {{ item }} </h2>
+        {% endfor %}
+    {% endif %}
+</body>
+</html>
