@@ -8,7 +8,7 @@ int state = 0;
 const int analog = A1;
 
 int num = 0;
-int s = 5;
+int s = 5; //s skal være lik størrelsen på arrayet "runder" deklarert i linje 13
 int iterate = 0;
 int runde [5] = {0,0,0,0,0}; //Oppretter et Array med 5 elementer og bruker dette til å registrere magneten en gang for hver gang den passerer. Se funksjonen telleRunder()
 int runder = 0;
