@@ -2,7 +2,6 @@ from django.shortcuts import render
 from django.http import Http404
 from django.views.decorators.csrf import csrf_exempt
 from .models import CycleTimes
-import json
 
 # Create your views here.
 

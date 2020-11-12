@@ -23,10 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = '*qokmdy9j)c=_(x$v2$3b5mxv@o+h0f^)2t104ewbmu*m*-9*+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS=['http://localhost:5000', '127.0.0.1', 'gruppe26.innovasjon.ed.ntnu.no']
 
 # Application definition
 
@@ -70,7 +69,6 @@ TEMPLATES = [
     },
 ]
 
-# ALLOWED_HOSTS=['http://localhost:5000', '127.0.0.1']
 CORS_ORIGIN_ALLOW_ALL = True
 # CORS_ORIGIN_WHITELIST = (
 #     'http://localhost:5000',
