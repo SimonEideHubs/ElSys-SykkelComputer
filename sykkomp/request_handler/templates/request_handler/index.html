@@ -6,12 +6,9 @@
 </head>
 <body>
     <h1>Dette er en test</h1>
-    <p>{{ time }}</p>
     <br/>
-    {% if data.time != null %}
-        {% for item in data %}
-            <h2>Data: {{ item }} </h2>
-        {% endfor %}
+    {% if time != null %}
+        <h3>Data: {{ time }} </h3>
     {% endif %}
 </body>
 </html>
