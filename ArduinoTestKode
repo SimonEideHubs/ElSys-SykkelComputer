@@ -1,0 +1,88 @@
+//Vi bruker The Things Uno, så man må endre kortet sitt til "Arduino Leonardo" for å kunne kjøre koden og laste den opp.
+//Dette er testkode hvor vi bruker sensoren til å skru på et lys hver gang magneten passerer sensoren, 
+//men når vi finner ut hvordan vi kan sende ut informasjon fra Arduinoen er det bare å sette inn det i den eksisterende koden
+
+int hallsensorpin = 2;
+int ledpin = 13;
+int state = 0;
+const int analog = A1;
+
+int num = 0;
+int s = 5;
+int iterate = 0;
+int runde [5] = {0,0,0,0,0}; //Oppretter et Array med 5 elementer og bruker dette til å registrere magneten en gang for hver gang den passerer. Se funksjonen telleRunder()
+int runder = 0;
+double radius = 0.6; // Radiusen vi bruker for dekket i meter
+double sekunder[5] = {0,0,0,0,0}; //Litt av samme tanke her som når vi bruker arrayet "Ruder" for å telle 
+
+double hastighet(double radius){ //Regner ut hastigheten og returnerer den. Gjør det på denne måten så man slipper en range feil for arrayet
+  if(iterate != 0){
+    return (0.0314 * 2 * radius) / (sekunder[iterate] - sekunder[iterate - 1]); //
+}
+  else{
+    return (0.0314 * 2 * radius) / (sekunder[0] - sekunder[5]);
+  }
+}
+double avstand(int runder, double radius){
+  return runder * radius * 2 * 3.14; //Returnerer avstanden bastert på hvor mange runder og radiusen til hjulet.
+}
+void iterer(){ //Funksjonen teller fra 0 til 5. Når den kommer til 5 går den tilbake til 0. Bruker dette for å iterere mellom listene
+  if(iterate < 5){
+    ++iterate;
+  }
+  else{
+    iterate = 0;
+  }
+}
+void tellerunder(){
+  runde[iterate] = state; //State sier om magneten er nærme nok eller ikke (0 for nei, 1 for ja)
+  if(iterate != 0){ // Deler opp for å slippe en range error i arrayet. 
+    if(runde[iterate - 1] == 0 && runde[iterate] == 1){ //Hvis den forrige staten var 0, men den er nå 1 så teller man + 1.
+      ++runder;
+      sekunder[iterate] = double(millis()); // Registrerer tidspunktet slik at vi kan bruke dette for å beregne hastigheten. 
+      Serial.println("Antall runder: " + String(runder)); //Printer for å teste at koden fungerer fint 
+      Serial.println("Avstand: " + String(avstand(runder, radius)) + "m");
+    }
+  }
+  else{
+    if(runde[s-1] == 0 && runde[0] == 1){
+      ++runder;
+      sekunder[iterate] = double(millis());
+      Serial.println("Antall runder: " + String(runder));
+      Serial.println("Avstand: " + String(avstand(runder, radius)) + "m");
+    }
+  }
+}
+
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(ledpin, OUTPUT); //Her skrur man av og på lyset
+  //pinMode(hallsensorpin, INPUT); 
+  pinMode (analog, INPUT); //Leser av den analoge verdien til sensoren
+  Serial.begin(9600);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+ 
+  //state = digitalRead(hallsensorpin); Funker ikke for Arduino Wifi ettersom at default verdien til sensoren vår er høy nok til å sette den til 1 uavhengig av magneten
+  num = analogRead(analog); //Siden den digitale ikke fungerer helt må vi bruke den analoge verdien, det er en mulighet for at denne kan variere for andre brukere
+
+  if (num < 500){
+    digitalWrite(ledpin, HIGH); //Verdien er høy nok, så magneten er nærme nok, lyset skal skrus på
+    state = 1;
+  }
+    else{
+      digitalWrite(ledpin, LOW); //Verdien til sensoren er for lav, så lyset skrus ikke på
+      state = 0;
+  }
+
+  
+  iterer(); 
+  tellerunder();
+  Serial.println("Hastighet: " + String(hastighet(radius))); //Printer ut hastigheten. Foreløpig en relativt statisk hastighet, så det er rom for forbedring. 
+  //Hastigheten vil foreløpig ikke komme på null. Den vil stå stille på den hastigheten som man sist regnet seg til før hjulet stoppet. 
+  
+  delay(50); //Dette er for å hjelpe Arduinoen
+  }
