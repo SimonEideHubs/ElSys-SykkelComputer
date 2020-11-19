@@ -1,0 +1,113 @@
+#include <TheThingsNetwork.h>
+
+// Set your AppEUI and AppKey
+const char *appEui = "70B3D57ED0037E93";
+const char *appKey = "36D059B0FDD0D606F7516FD117CB40E8";
+
+#define loraSerial Serial1
+#define debugSerial Serial
+
+// Replace REPLACE_ME with TTN_FP_EU868 or TTN_FP_US915
+#define freqPlan TTN_FP_EU868
+
+TheThingsNetwork ttn(loraSerial, debugSerial, freqPlan);
+
+int ledpin = 10;
+const int analog = A0;
+
+int state = 0;
+int num = 0;
+int iterate = 0;
+int runde [5] = {0,0,0,0,0}; //Oppretter et Array med 5 elementer og bruker dette til å registrere magneten en gang for hver gang den passerer. 
+                             //Se funksjonen telleRunder()
+int runder = 0;
+
+void sensor(){
+  num = analogRead(analog); //Siden den digitale ikke fungerer helt må vi bruke den analoge verdien, det er en mulighet for at denne kan variere for andre brukere
+  
+  if (num < 460){
+    digitalWrite(ledpin, HIGH); //Verdien er høy nok, så magneten er nærme nok, lyset skal skrus på
+    state = 1;
+  }
+    else{
+      digitalWrite(ledpin, LOW); //Verdien til sensoren er for lav, så lyset skrus ikke på
+      state = 0;
+  }
+}
+
+void tellerunder(){
+  runde[iterate] = state;
+  if(iterate != 0){ // Deler opp for å slippe en range error i arrayet. 
+    if(runde[iterate - 1] == 0 && runde[iterate] == 1){ //Hvis den forrige staten var 0, men den er nå 1 så teller man + 1.
+      ++runder;
+      print_runder();
+      sendPayload();
+    }
+  }
+  else{
+    if(runde[4] == 0 && runde[0] == 1){
+      ++runder;
+      print_runder();
+      sendPayload();
+    }
+  }
+}
+
+void iterer(){ //Funksjonen teller fra 0 til 4. Når den kommer til 4 går den tilbake til 0. Bruker dette for å iterere mellom listene
+  if(iterate < 5){
+    ++iterate;
+  }
+  else{
+    iterate = 0;
+  }
+}
+
+void sendPayload(){
+  uint16_t pay = runder;
+  byte payload[2];
+  payload[0] = highByte(pay);
+  payload[1] = lowByte(pay);
+
+
+  
+  // Send it off
+  ttn.sendBytes(payload, sizeof(payload));
+  Serial.println("Payload sent");
+  
+}
+
+void print_runder(){ //Kode for å 
+  Serial.println("Antall runder: " + String(runder));
+}
+
+void setup() {
+  // put your setup code here, to run once:
+
+  loraSerial.begin(57600);
+  debugSerial.begin(9600);
+
+  // Wait a maximum of 10s for Serial Monitor
+  while (!debugSerial && millis() < 10000)
+    ;
+
+  debugSerial.println("-- STATUS");
+  ttn.showStatus();
+
+  debugSerial.println("-- JOIN");
+  ttn.join(appEui, appKey);
+
+  pinMode(ledpin, OUTPUT); //Her skrur man av og på lyset
+  pinMode (analog, INPUT); //Leser av den analoge verdien til sensoren
+  Serial.begin(9600);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  
+  sensor(); 
+  tellerunder();
+  iterer();
+  
+   
+  delay(10);
+}
