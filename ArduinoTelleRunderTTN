@@ -15,33 +15,36 @@ TheThingsNetwork ttn(loraSerial, debugSerial, freqPlan);
 int ledpin = 10;
 const int analog = A0;
 
-int state = 0;
-int num = 0;
+int state = 0; // State har verdien 1 når sensoren registrerer magneten og 0 ellers
+int num = 0; // Num brukes for å sjekke verdien til sensoren, fint for å finne hvilke verdier som magneten produserer.
 int iterate = 0;
 int runde [5] = {0,0,0,0,0}; //Oppretter et Array med 5 elementer og bruker dette til å registrere magneten en gang for hver gang den passerer. 
                              //Se funksjonen telleRunder()
-int runder = 0;
+int runder = 0; // Antall runder hjulet går rundt
 
 void sensor(){
-  num = analogRead(analog); //Siden den digitale ikke fungerer helt må vi bruke den analoge verdien, det er en mulighet for at denne kan variere for andre brukere
+  num = analogRead(analog); //Man kan bruke både digital og analog, men å bruke analog gir oss frihet til å justere på når den skrur seg av/på som kan gi bedre rekkevidde
   
-  if (num < 460){
-    digitalWrite(ledpin, HIGH); //Verdien er høy nok, så magneten er nærme nok, lyset skal skrus på
+  if (num < 460){ //Gjennom testing har vi funnet ut at dette er et fint tall i vårt tilfelle, og gir oss den beste rekkevidden med denne magneten
+    digitalWrite(ledpin, HIGH); //Verdien er lav nok, så magneten er nærme nok, lyset skrus på
     state = 1;
   }
     else{
-      digitalWrite(ledpin, LOW); //Verdien til sensoren er for lav, så lyset skrus ikke på
+      digitalWrite(ledpin, LOW); //Verdien til sensoren er for høy, så lyset skrus ikke på
       state = 0;
   }
 }
 
-void tellerunder(){
-  runde[iterate] = state;
+void tellerunder(){ //Funksjonen sørger for at man ikke teller mer enn det man skal når magneten passerer sensoren. 
+  runde[iterate] = state; //Tar i bruk arrayet runde for å lagre staten til sensoren. Staten endres i sensor funksjonen
   if(iterate != 0){ // Deler opp for å slippe en range error i arrayet. 
-    if(runde[iterate - 1] == 0 && runde[iterate] == 1){ //Hvis den forrige staten var 0, men den er nå 1 så teller man + 1.
+    if(runde[iterate - 1] == 0 && runde[iterate] == 1){ //Hvis den forrige staten var 0, men den er nå 1 så teller man + 1, hvis ikke så har det ikke skjedd en endring.
       ++runder;
-      print_runder();
-      sendPayload();
+      //print_runder(); //En måte å teste om den registrerer riktig
+      sendPayload(); //Kaller funksjonen som sender data til nettsiden. Ettersom at den bruker litt tid på å sende data er det en fare for at den ikke registrerer hver 
+      //gang magneten passerer sensoren, så det er mulig å endre på denne slik at den sender data etter et gitt antall runder.
+      //if(runder % 5 == 0){ //Lagt inn sjekk hvor den bare sender data hver femte runde. 
+        //sendPayload();
     }
   }
   else{
@@ -49,24 +52,33 @@ void tellerunder(){
       ++runder;
       print_runder();
       sendPayload();
+      //if(runder % 5 == 0){ //Lagt inn sjekk hvor den bare sender data hver femte runde. 
+        //sendPayload();
+    }
     }
   }
 }
 
-void iterer(){ //Funksjonen teller fra 0 til 4. Når den kommer til 4 går den tilbake til 0. Bruker dette for å iterere mellom listene
+void iterer(){ //Funksjonen teller fra 0 til 4. Når den kommer til 4 går den tilbake til 0. Bruker dette for å iterere mellom arrayene.
   if(iterate < 5){
-    ++iterate;
+    ++iterate; //0->1->2->3->4
   }
   else{
-    iterate = 0;
+    iterate = 0; //4->0
   }
 }
 
 void sendPayload(){
-  uint16_t pay = runder;
-  byte payload[2];
+  uint16_t pay = runder; //Funksjonen sender antall runder
+  uint16_t tid = millis(); //og tiden. Dette sendes til nettsiden hvor man gjør det om til avstand og hastighet. 
+  //Merk: Man sender 16 bits med informasjon hver, altså 2 byte. Så man etter det har gått 65535 millisekunder (65.5 sekunder) vil tiden resette seg til 0. 
+  //Det samme er tilfellet for antall runder, så hvis man antar en hjulradius på 0.6 m vil dette tilsvare 247 km på sykkelen før rundene går til 0. 
+  
+  byte payload[4];
   payload[0] = highByte(pay);
   payload[1] = lowByte(pay);
+  payload[2] = highByte(tid);
+  payload[3] = lowByte(tid);
 
 
   
@@ -76,7 +88,7 @@ void sendPayload(){
   
 }
 
-void print_runder(){ //Kode for å 
+void print_runder(){ //Kode for å skrive ut antall runder. Fint for testing av prototype
   Serial.println("Antall runder: " + String(runder));
 }
 
@@ -104,9 +116,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   
-  sensor(); 
-  tellerunder();
-  iterer();
+  sensor(); //Kaller sensor-funksjonen som bestemmer om lyset skal skru seg på eller ikke
+  tellerunder(); //Kaller telle-funksjonen, som bestemmer om man skal telle en ny runde eller ikke
+  iterer(); //Iterer gjennom arrayene som brukes av de forskjellige funksjonenene
   
    
   delay(10);
